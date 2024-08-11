@@ -1,7 +1,56 @@
 'use client'
 
-import { Box, Button, Stack, TextField } from '@mui/material'
-import { useState, useRef, useEffect } from 'react'
+import { Box, Button, Stack, TextField, Typography } from '@mui/material'
+import { ThemeProvider, createTheme } from '@mui/material/styles'
+import React, { useState, useRef, useEffect } from 'react'
+
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    background: {
+      default: '#1e1e1e',
+      paper: '#2d2d2d',
+    },
+    primary: {
+      main: '#3f51b5',
+    },
+    secondary: {
+      main: '#f50057',
+    },
+  },
+});
+
+// LLM info component
+// Updated LLM info component with rounded logo
+const LLMInfo = () => (
+  <Box
+    sx={{
+      backgroundColor: 'rgba(255,255,255,0.1)',
+      padding: '3px 8px',
+      borderRadius: '8px',
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: '4px',
+      width: 'fit-content',
+    }}
+  >
+    <Box
+      component="img"
+      src="/images/llama-logo.png"
+      alt="LLama Logo"
+      sx={{
+        width: 16,
+        height: 16,
+        marginRight: 1,
+        borderRadius: '50%',
+        objectFit: 'cover',
+      }}
+    />
+    <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
+      LLama-3.1-8b-instruct
+    </Typography>
+  </Box>
+);
 
 export default function Home() {
   const [messages, setMessages] = useState([
@@ -82,67 +131,81 @@ export default function Home() {
   }
 
   return (
-    <Box
-      width="100vw"
-      height="100vh"
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-    >
-      <Stack
-        direction={'column'}
-        width="500px"
-        height="700px"
-        border="1px solid black"
-        p={2}
-        spacing={3}
+    <ThemeProvider theme={darkTheme}>
+      <Box
+        width="100vw"
+        height="100vh"
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        bgcolor="background.default"
       >
-        <Stack
-          direction={'column'}
-          spacing={2}
-          flexGrow={1}
-          overflow="auto"
-          maxHeight="100%"
+        <Box
+          width="500px"
+          height="700px"
+          borderRadius="20px"
+          overflow="hidden"
+          boxShadow="0 0 20px rgba(0,0,0,0.3)"
+          position="relative"
+          bgcolor="background.paper"
         >
-          {messages.map((message, index) => (
-            <Box
-              key={index}
-              display="flex"
-              justifyContent={
-                message.role === 'assistant' ? 'flex-start' : 'flex-end'
-              }
+          <Stack
+            direction="column"
+            height="100%"
+            spacing={2}
+          >
+            <Stack
+              direction="column"
+              spacing={2}
+              flexGrow={1}
+              overflow="auto"
+              p={2}
             >
-              <Box
-                bgcolor={
-                  message.role === 'assistant'
-                    ? 'primary.main'
-                    : 'secondary.main'
-                }
-                color="white"
-                borderRadius={16}
-                p={3}
-              >
-                {message.content}
-              </Box>
-            </Box>
-          ))}
-          <div ref={messagesEndRef} />
-        </Stack>
-        <Stack direction={'row'} spacing={2}>
-          <TextField
-            label="Message"
-            fullWidth
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={isLoading}
-          />
-          <Button variant="contained" onClick={sendMessage} disabled={isLoading}>
-            {isLoading ? 'Sending...' : 'Send'}
-          </Button>
-        </Stack>
-      </Stack>
-    </Box>
-  )
+              {messages.map((message, index) => (
+                <Box
+                  key={index}
+                  display="flex"
+                  flexDirection="column"
+                  alignItems={
+                    message.role === 'assistant' ? 'flex-start' : 'flex-end'
+                  }
+                >
+                  {message.role === 'assistant' && <LLMInfo />}
+                  <Box
+                    bgcolor={
+                      message.role === 'assistant'
+                        ? 'primary.main'
+                        : 'secondary.main'
+                    }
+                    color="white"
+                    borderRadius={10}
+                    p={3.5}
+                    maxWidth="70%"
+                  >
+                    <Typography>{message.content}</Typography>
+                  </Box>
+                </Box>
+              ))}
+              <div ref={messagesEndRef} />
+            </Stack>
+            <Stack direction="row" spacing={2} p={2} bgcolor="background.default">
+              <TextField
+                label="Message"
+                fullWidth
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                disabled={isLoading}
+                variant="outlined"
+              />
+              <Button variant="contained" onClick={sendMessage} disabled={isLoading}>
+                {isLoading ? 'Sending...' : 'Send'}
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      </Box>
+    </ThemeProvider>
+  );
 }
