@@ -27,8 +27,8 @@ export default function Home() {
     setIsLoading(true)
   
     setMessage('')
-    setMessages((messages) => [
-      ...messages,
+    setMessages((prevMessages) => [
+      ...prevMessages,
       { role: 'user', content: message },
       { role: 'assistant', content: '' },
     ])
@@ -49,23 +49,25 @@ export default function Home() {
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
   
+      let accumulatedContent = ''
+  
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        const text = decoder.decode(value, { stream: true })
-        setMessages((messages) => {
-          let lastMessage = messages[messages.length - 1]
-          let otherMessages = messages.slice(0, messages.length - 1)
-          return [
-            ...otherMessages,
-            { ...lastMessage, content: lastMessage.content + text },
-          ]
+        
+        const chunk = decoder.decode(value, { stream: true })
+        accumulatedContent += chunk
+  
+        setMessages((prevMessages) => {
+          const newMessages = [...prevMessages]
+          newMessages[newMessages.length - 1].content = accumulatedContent
+          return newMessages
         })
       }
     } catch (error) {
       console.error('Error:', error)
-      setMessages((messages) => [
-        ...messages,
+      setMessages((prevMessages) => [
+        ...prevMessages,
         { role: 'assistant', content: "I'm sorry, but I encountered an error. Please try again later." },
       ])
     }
