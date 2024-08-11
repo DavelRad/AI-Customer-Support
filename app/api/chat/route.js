@@ -1,41 +1,62 @@
-import {NextResponse} from 'next/server' // Import NextResponse from Next.js for handling responses
-import OpenAI from 'openai' // Import OpenAI library for interacting with the OpenAI API
+import { NextResponse } from 'next/server'
 
-// System prompt for the AI, providing guidelines on how to respond to users
-const systemPrompt = `You are an intelligent and friendly customer support assistant for Headstarter, a platform that facilitates AI-powered interviews for software engineering (SWE) job candidates. Your goal is to provide clear, helpful, and concise answers to users' queries while maintaining a professional and supportive tone. You assist with questions about how the platform works, setting up interviews, technical issues, best practices for using AI in interviews, and understanding the features designed to help candidates succeed. When dealing with complex issues, guide users through troubleshooting steps and escalate unresolved issues to human support when necessary. Ensure users feel confident and supported as they navigate the Headstarter platform.`// Use your own system prompt here
+const systemPrompt = `You are an intelligent and friendly customer support assistant for Headstarter, a platform that facilitates AI-powered interviews for software engineering (SWE) job candidates. Your goal is to provide clear, helpful, and concise answers to users' queries while maintaining a professional and supportive tone. You assist with questions about how the platform works, setting up interviews, technical issues, best practices for using AI in interviews, and understanding the features designed to help candidates succeed. When dealing with complex issues, guide users through troubleshooting steps and escalate unresolved issues to human support when necessary. Ensure users feel confident and supported as they navigate the Headstarter platform.`
 
-// POST function to handle incoming requests
 export async function POST(req) {
-  const openai = new OpenAI() // Create a new instance of the OpenAI client
-  const data = await req.json() // Parse the JSON body of the incoming request
+  const data = await req.json()
 
-  // Create a chat completion request to the OpenAI API
-  const completion = await openai.chat.completions.create({
-    messages: [{role: 'system', content: systemPrompt}, ...data], // Include the system prompt and user messages
-    model: 'gpt-4o-mini', // Specify the model to use
-    stream: true, // Enable streaming responses
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...data
+  ]
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'HTTP-Referer': 'https://your-website-url.com', // Replace with your actual website URL
+      'X-Title': 'Headstarter Support Chat' // Replace with your application name
+    },
+    body: JSON.stringify({
+      model: 'meta-llama/llama-3.1-8b-instruct:free',
+      messages: messages,
+      stream: true
+    })
   })
 
-  // Create a ReadableStream to handle the streaming response
-  const stream = new ReadableStream({
-    async start(controller) {
-      const encoder = new TextEncoder() // Create a TextEncoder to convert strings to Uint8Array
-      try {
-        // Iterate over the streamed chunks of the response
-        for await (const chunk of completion) {
-          const content = chunk.choices[0]?.delta?.content // Extract the content from the chunk
-          if (content) {
-            const text = encoder.encode(content) // Encode the content to Uint8Array
-            controller.enqueue(text) // Enqueue the encoded text to the stream
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+
+  async function* streamAsyncIterator() {
+    let leftover = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) return
+      
+      const chunk = decoder.decode(value, { stream: true })
+      const lines = (leftover + chunk).split('\n')
+      leftover = lines.pop() || ''
+  
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6)
+          if (data === '[DONE]') return
+          try {
+            const parsed = JSON.parse(data)
+            const content = parsed.choices[0]?.delta?.content || ''
+            if (content) yield content
+          } catch (e) {
+            console.error('Error parsing JSON:', e)
           }
         }
-      } catch (err) {
-        controller.error(err) // Handle any errors that occur during streaming
-      } finally {
-        controller.close() // Close the stream when done
       }
-    },
-  })
+    }
+  }
 
-  return new NextResponse(stream) // Return the stream as the response
+  return new NextResponse(streamAsyncIterator())
 }
