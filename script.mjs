@@ -11,7 +11,6 @@ const pinecone = new Pinecone({
 });
 
 const index = pinecone.Index('headstarter-project3');
-
 const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 async function getEmbedding(text) {
