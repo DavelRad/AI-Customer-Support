@@ -1,8 +1,10 @@
 'use client'
 
-import { Box, Button, Stack, TextField, Typography } from '@mui/material'
+import { Box, Button, Stack, TextField, Typography, CircularProgress } from '@mui/material'
+import { styled } from '@mui/material/styles';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import React, { useState, useRef, useEffect } from 'react'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 const darkTheme = createTheme({
   palette: {
@@ -12,15 +14,29 @@ const darkTheme = createTheme({
       paper: '#2d2d2d',
     },
     primary: {
-      main: '#3f51b5',
+      main: '#2EBAFF',
     },
     secondary: {
-      main: '#f50057',
+      main: '#950606',
     },
   },
 });
 
-// LLM info component
+//From MUI documentation
+const VisuallyHiddenInput = styled('input')({
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  height: 1,
+  overflow: 'hidden',
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  whiteSpace: 'nowrap',
+  width: 1,
+});
+
+
+// LLM info component (tab on top of the chatbots messages)
 // Updated LLM info component with rounded logo
 const LLMInfo = () => (
   <Box
@@ -53,6 +69,7 @@ const LLMInfo = () => (
 );
 
 export default function Home() {
+  // State for the messages in the chat
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -63,6 +80,60 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)
 
+  //File Uploading
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [fileName, setFileName] = useState('');
+  const fileInputRef = useRef(null);
+  const MAX_FILE_SIZE_KB = 40;
+  // Function to handle file change
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    if (selectedFile && selectedFile.size > MAX_FILE_SIZE_KB * 1024) {
+      alert(`File size exceeds ${MAX_FILE_SIZE_KB} KB`);
+      return;
+    } else {
+      setFile(selectedFile);
+      setFileName(selectedFile ? selectedFile.name : '');
+    }
+    
+  };
+
+  // Function to upload a file
+  const uploadFile = async () => {
+    if (!file) return;
+
+    setUploading(true);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        console.log('File uploaded successfully');
+        setFile(null);
+        setFileName(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        alert('File uploaded successfully');
+      } else {
+        console.error('File upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Error uploading file');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Scroll to the bottom of the chat
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
@@ -74,7 +145,6 @@ export default function Home() {
   const sendMessage = async () => {
     if (!message.trim() || isLoading) return;
     setIsLoading(true)
-  
     setMessage('')
     setMessages((prevMessages) => [
       ...prevMessages,
@@ -90,7 +160,6 @@ export default function Home() {
         },
         body: JSON.stringify([...messages, { role: 'user', content: message }]),
       })
-  
       if (!response.ok) {
         throw new Error('Network response was not ok')
       }
@@ -103,13 +172,12 @@ export default function Home() {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        
         const chunk = decoder.decode(value, { stream: true })
         accumulatedContent += chunk
   
         setMessages((prevMessages) => {
           const newMessages = [...prevMessages]
-          newMessages[newMessages.length - 1].content = accumulatedContent
+          newMessages[newMessages.length - 1].content = formatContent(accumulatedContent);
           return newMessages
         })
       }
@@ -122,7 +190,7 @@ export default function Home() {
     }
     setIsLoading(false)
   }
-
+  // Function to handle the enter key press
   const handleKeyPress = (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
@@ -130,8 +198,16 @@ export default function Home() {
     }
   }
 
+  // Help formatting the content
+  const formatContent = (content) => {
+    return content
+      .replace(/\n/g, '<br>')
+      .replace(/\* /g, '• ');
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
+      {/* main page */}
       <Box
         width="100vw"
         height="100vh"
@@ -139,28 +215,36 @@ export default function Home() {
         flexDirection="column"
         justifyContent="center"
         alignItems="center"
-        bgcolor="background.default"
+
       >
+        {/* chat box */}
         <Box
-          width="500px"
+          width="1000px"
           height="700px"
           borderRadius="20px"
           overflow="hidden"
-          boxShadow="0 0 20px rgba(0,0,0,0.3)"
           position="relative"
           bgcolor="background.paper"
+          sx={
+            {
+              boxShadow: '0 0 20px rgba(255,255,255,0.3)',
+
+            }
+          }
         >
+          {/* stack for the chat messages and input */}
           <Stack
             direction="column"
             height="100%"
             spacing={2}
           >
+            {/* stack for mess */}
             <Stack
               direction="column"
               spacing={2}
               flexGrow={1}
               overflow="auto"
-              p={2}
+              p={3}
             >
               {messages.map((message, index) => (
                 <Box
@@ -179,28 +263,111 @@ export default function Home() {
                         : 'secondary.main'
                     }
                     color="white"
-                    borderRadius={10}
+                    borderRadius={5}
                     p={3.5}
+                    m={0.5}
                     maxWidth="70%"
+                    sx={{
+                      boxShadow: '0 0 10px rgba(255,255,255,0.2)',
+                      transition: 'all 0.3s ease-in-out',
+                      '&:hover': {
+                        boxShadow: '0 0 15px rgba(255,255,255,0.4)',
+                      },
+                      '& ul': {
+                        paddingLeft: '20px',
+                        margin: 0,
+                      },
+                      '& li': {
+                        marginBottom: '5px',
+                      },
+                    }}
                   >
-                    <Typography>{message.content}</Typography>
+                    <div
+                        dangerouslySetInnerHTML={{ __html: message.content }}
+                        style={{ whiteSpace: 'pre-wrap' }}
+                      />
                   </Box>
                 </Box>
               ))}
               <div ref={messagesEndRef} />
             </Stack>
-            <Stack direction="row" spacing={2} p={2} bgcolor="background.default">
-              <TextField
-                label="Message"
-                fullWidth
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
+            {/* stack for input */}
+            <Stack direction="row" spacing={2} p={2} bgcolor="background.default" alignItems="flex-end">
+              <Box
+                sx={{
+                  flexGrow: 1,
+                  position: 'relative',
+                  maxHeight: '150px', 
+                }}
+              >
+                <TextField
+                  multiline
+                  maxRows={7}
+                  label="Message"
+                  fullWidth
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  disabled={isLoading}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiInputBase-root': {
+                      maxHeight: '150px', 
+                      overflowY: 'auto',
+                    },
+                    '& .MuiInputLabel-root': {
+                      background: 'background.default',
+                      padding: '0 4px',
+                    },
+                  }}
+                />
+              </Box>
+              <Button
+                variant="contained"
+                onClick={sendMessage}
                 disabled={isLoading}
-                variant="outlined"
-              />
-              <Button variant="contained" onClick={sendMessage} disabled={isLoading}>
+                sx={{ height: '50px' }} // Increased height to match TextField
+              >
                 {isLoading ? 'Sending...' : 'Send'}
+              </Button>
+              {/* Uploading Button */}
+              <Button
+                component="label"
+                role={undefined}
+                variant="contained"
+                tabIndex={-1}
+                startIcon={<CloudUploadIcon />}
+                sx={{ height: '50px',
+                      width:'150px', 
+                      position: 'relative',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',}} 
+                >
+                <Box
+                  sx={{
+                    flexGrow: 1,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                  >
+                  {fileName || 'Add Docs (Max 40 KB)'}
+                </Box>
+                <VisuallyHiddenInput type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange} />
+              </Button>
+
+              <Button
+                onClick={uploadFile}
+                variant='contained'
+                sx={{ height: '50px' }}
+                disabled = {uploading}
+                >
+                {uploading ? <CircularProgress size={24} /> : 'Upload'}
               </Button>
             </Stack>
           </Stack>
