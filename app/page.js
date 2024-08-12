@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Button, Stack, TextField, Typography } from '@mui/material'
+import { Box, Button, Stack, TextField, Typography, CircularProgress } from '@mui/material'
 import { styled } from '@mui/material/styles';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import React, { useState, useRef, useEffect } from 'react'
@@ -82,16 +82,28 @@ export default function Home() {
 
   //File Uploading
   const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [fileName, setFileName] = useState('');
   const fileInputRef = useRef(null);
-
+  const MAX_FILE_SIZE_KB = 40;
   // Function to handle file change
   const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
+    const selectedFile = event.target.files[0];
+    if (selectedFile && selectedFile.size > MAX_FILE_SIZE_KB * 1024) {
+      alert(`File size exceeds ${MAX_FILE_SIZE_KB} KB`);
+      return;
+    } else {
+      setFile(selectedFile);
+      setFileName(selectedFile ? selectedFile.name : '');
+    }
+    
   };
 
   // Function to upload a file
   const uploadFile = async () => {
     if (!file) return;
+
+    setUploading(true);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -105,14 +117,19 @@ export default function Home() {
       if (response.ok) {
         console.log('File uploaded successfully');
         setFile(null);
+        setFileName(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+        alert('File uploaded successfully');
       } else {
         console.error('File upload failed');
       }
     } catch (error) {
       console.error('Error uploading file:', error);
+      alert('Error uploading file');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -202,7 +219,7 @@ export default function Home() {
       >
         {/* chat box */}
         <Box
-          width="800px"
+          width="1000px"
           height="700px"
           borderRadius="20px"
           overflow="hidden"
@@ -309,28 +326,48 @@ export default function Home() {
                 variant="contained"
                 onClick={sendMessage}
                 disabled={isLoading}
-                sx={{ height: '46px' }} // Increased height to match TextField
+                sx={{ height: '50px' }} // Increased height to match TextField
               >
                 {isLoading ? 'Sending...' : 'Send'}
               </Button>
+              {/* Uploading Button */}
               <Button
                 component="label"
                 role={undefined}
                 variant="contained"
                 tabIndex={-1}
                 startIcon={<CloudUploadIcon />}
-                sx={{ height: '46px' }} // Increased height to match TextField
-              >
-                Add Files
+                sx={{ height: '50px',
+                      width:'150px', 
+                      position: 'relative',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',}} 
+                >
+                <Box
+                  sx={{
+                    flexGrow: 1,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                  >
+                  {fileName || 'Add Docs (Max 40 KB)'}
+                </Box>
                 <VisuallyHiddenInput type="file"
                 ref={fileInputRef}
                 onChange={handleFileChange} />
               </Button>
+
               <Button
                 onClick={uploadFile}
                 variant='contained'
-                sx={{ height: '46px' }}>
-                Upload
+                sx={{ height: '50px' }}
+                disabled = {uploading}
+                >
+                {uploading ? <CircularProgress size={24} /> : 'Upload'}
               </Button>
             </Stack>
           </Stack>
