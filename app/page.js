@@ -38,35 +38,54 @@ const VisuallyHiddenInput = styled('input')({
 
 // LLM info component (tab on top of the chatbots messages)
 // Updated LLM info component with rounded logo
-const LLMInfo = () => (
-  <Box
-    sx={{
-      backgroundColor: 'rgba(255,255,255,0.1)',
-      padding: '3px 8px',
-      borderRadius: '8px',
-      display: 'flex',
-      alignItems: 'center',
-      marginBottom: '4px',
-      width: 'fit-content',
-    }}
-  >
+const LLMInfo = ({ model }) => {
+  const modelInfo = {
+    'meta-llama/llama-3.1-8b-instruct:free': {
+      name: 'LLama-3.1-8b-instruct',
+      logo: '/images/llama-logo.png'
+    },
+    'openchat/openchat-7b:free': {
+      name: 'OpenChat 3.5',
+      logo: '/images/openchat-logo.png'
+    },
+    'gryphe/mythomist-7b:free': {
+      name: 'MythoMist-7b',
+      logo: '/images/mythomist-logo.png'
+    }
+  };
+
+  const { name, logo } = modelInfo[model] || modelInfo['meta-llama/llama-3.1-8b-instruct:free'];
+
+  return (
     <Box
-      component="img"
-      src="/images/llama-logo.png"
-      alt="LLama Logo"
       sx={{
-        width: 16,
-        height: 16,
-        marginRight: 1,
-        borderRadius: '50%',
-        objectFit: 'cover',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        padding: '3px 8px',
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        marginBottom: '4px',
+        width: 'fit-content',
       }}
-    />
-    <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
-      LLama-3.1-8b-instruct
-    </Typography>
-  </Box>
-);
+    >
+      <Box
+        component="img"
+        src={logo}
+        alt={`${name} Logo`}
+        sx={{
+          width: 16,
+          height: 16,
+          marginRight: 1,
+          borderRadius: '50%',
+          objectFit: 'cover',
+        }}
+      />
+      <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
+        {name}
+      </Typography>
+    </Box>
+  );
+};
 
 export default function Home() {
   // State for the messages in the chat
@@ -79,6 +98,8 @@ export default function Home() {
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)
+  const [currentModel, setCurrentModel] = useState('meta-llama/llama-3.1-8b-instruct:free');
+
 
   //File Uploading
   const [file, setFile] = useState(null);
@@ -149,7 +170,7 @@ export default function Home() {
     setMessages((prevMessages) => [
       ...prevMessages,
       { role: 'user', content: message },
-      { role: 'assistant', content: '' },
+      { role: 'assistant', content: '', model: currentModel },
     ])
   
     try {
@@ -168,27 +189,46 @@ export default function Home() {
       const decoder = new TextDecoder()
   
       let accumulatedContent = ''
+      let newModel = currentModel
   
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
         const chunk = decoder.decode(value, { stream: true })
-        accumulatedContent += chunk
+        const lines = chunk.split('\n')
+        
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const parsedLine = JSON.parse(line)
+              if (parsedLine.model) {
+                newModel = parsedLine.model
+              } else {
+                accumulatedContent += parsedLine
+              }
+            } catch (e) {
+              accumulatedContent += line
+            }
+          }
+        }
   
         setMessages((prevMessages) => {
           const newMessages = [...prevMessages]
           newMessages[newMessages.length - 1].content = formatContent(accumulatedContent);
+          newMessages[newMessages.length - 1].model = newModel;
           return newMessages
         })
+        setCurrentModel(newModel)
       }
     } catch (error) {
       console.error('Error:', error)
       setMessages((prevMessages) => [
         ...prevMessages,
-        { role: 'assistant', content: "I'm sorry, but I encountered an error. Please try again later." },
+        { role: 'assistant', content: "I'm sorry, but I encountered an error. Please try again later.", model: currentModel },
       ])
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
   // Function to handle the enter key press
   const handleKeyPress = (event) => {
@@ -255,7 +295,7 @@ export default function Home() {
                     message.role === 'assistant' ? 'flex-start' : 'flex-end'
                   }
                 >
-                  {message.role === 'assistant' && <LLMInfo />}
+                  {message.role === 'assistant' && <LLMInfo model={message.model} />}
                   <Box
                     bgcolor={
                       message.role === 'assistant'
