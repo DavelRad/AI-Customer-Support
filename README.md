@@ -57,13 +57,9 @@ This project is an AI-driven support chatbot designed to enhance user experience
         HUGGINGFACE_API_KEY=your_huggingface_api_key
         OPENROUTER_API_KEY=your_openrouter_api_key
         ```
-
-
-5. **Run the application**: 
-        ```
-        node script.mjs
-        npm run dev
-        ```
+5. **Run the application**:
+`node script.mjs`
+`npm run dev`
 7. **Access the application**:
     * Open your browser and navigate to `http://localhost:3000`.
 
