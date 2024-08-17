@@ -1,10 +1,12 @@
 'use client'
 
-import { Box, Button, Stack, TextField, Typography, CircularProgress } from '@mui/material'
+import { Box, Button, Stack, TextField, Typography, CircularProgress, Avatar, Menu, MenuItem } from '@mui/material'
 import { styled } from '@mui/material/styles';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import React, { useState, useRef, useEffect } from 'react'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 const darkTheme = createTheme({
   palette: {
@@ -87,6 +89,43 @@ const LLMInfo = ({ model }) => {
   );
 };
 
+const UserProfile = ({ user, onLogout }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleClose();
+    onLogout();
+  };
+
+  return (
+    <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', alignItems: 'center' }}>
+      <Typography variant="body2" sx={{ mr: 2 }}>{user.email}</Typography>
+      <Avatar
+        onClick={handleClick}
+        sx={{ cursor: 'pointer', bgcolor: 'primary.main' }}
+      >
+        {user.email[0].toUpperCase()}
+      </Avatar>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+      >
+        <MenuItem onClick={handleLogout}>Logout</MenuItem>
+      </Menu>
+    </Box>
+  );
+};
+
 export default function Home() {
   // State for the messages in the chat
   const [messages, setMessages] = useState([
@@ -99,7 +138,23 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)
   const [currentModel, setCurrentModel] = useState('meta-llama/llama-3.1-8b-instruct:free');
+  const [user, setUser] = useState(null)
+  const router = useRouter()
 
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        setUser(null);
+        router.push('/authentication/login');
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [router]);
 
   //File Uploading
   const [file, setFile] = useState(null);
@@ -245,6 +300,16 @@ export default function Home() {
       .replace(/\* /g, '• ');
   };
 
+  const handleLogout = () => {
+    const auth = getAuth();
+    signOut(auth).then(() => {
+      router.push('/authentication/login');
+    }).catch((error) => {
+      console.error('Logout failed:', error);
+    });
+  };
+
+
   return (
     <ThemeProvider theme={darkTheme}>
       {/* main page */}
@@ -255,8 +320,10 @@ export default function Home() {
         flexDirection="column"
         justifyContent="center"
         alignItems="center"
-
+        position="relative"
       >
+        {user && <UserProfile user={user} onLogout={handleLogout} />}
+        
         {/* chat box */}
         <Box
           width="1000px"
@@ -265,12 +332,9 @@ export default function Home() {
           overflow="hidden"
           position="relative"
           bgcolor="background.paper"
-          sx={
-            {
-              boxShadow: '0 0 20px rgba(255,255,255,0.3)',
-
-            }
-          }
+          sx={{
+            boxShadow: '0 0 20px rgba(255,255,255,0.3)',
+          }}
         >
           {/* stack for the chat messages and input */}
           <Stack
