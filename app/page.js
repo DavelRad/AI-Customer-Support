@@ -3,10 +3,13 @@
 import { Box, Button, Stack, TextField, Typography, CircularProgress, Avatar, Menu, MenuItem } from '@mui/material'
 import { styled } from '@mui/material/styles';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, addDoc, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { auth, db } from './utils/firebase-config'
 import { useRouter } from 'next/navigation';
+import { create } from '@mui/material/styles/createTransitions';
 
 const darkTheme = createTheme({
   palette: {
@@ -108,7 +111,7 @@ const UserProfile = ({ user, onLogout }) => {
 
   return (
     <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', alignItems: 'center' }}>
-      <Typography variant="body2" sx={{ mr: 2 }}>{user.email}</Typography>
+      <Typography variant="body2" sx={{ mr: 2, color: 'white' }}>{user.email}</Typography>
       <Avatar
         onClick={handleClick}
         sx={{ cursor: 'pointer', bgcolor: 'primary.main' }}
@@ -139,23 +142,52 @@ export default function Home() {
   const messagesEndRef = useRef(null)
   const [currentModel, setCurrentModel] = useState('meta-llama/llama-3.1-8b-instruct:free');
   const [user, setUser] = useState(null)
+  const [threadId, setThreadId] = useState(null)
   const router = useRouter()
 
   useEffect(() => {
-    const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
+        loadCurrentThread(user.uid)
       } else {
         setUser(null);
         router.push('/authentication/login');
       }
     });
-
-    // Cleanup subscription on unmount
+  
     return () => unsubscribe();
   }, [router]);
 
+  const loadCurrentThread = useCallback(async (userId) => {
+    const threadId = localStorage.getItem('currentThreadId')
+    if (threadId) {
+      setThreadId(threadId)
+      const messagesRef = collection(db, 'users', userId, 'threads', threadId, 'messages')
+      const q = query(messagesRef, orderBy('timestamp', 'asc'))
+      const querySnapshot = await getDocs(q)
+      const loadedMessages = querySnapshot.docs.map(doc => doc.data())
+      setMessages(loadedMessages)
+    } else {
+      createNewThread(userId, db, setThreadId, setMessages)
+    }
+  }, [setThreadId, setMessages])
+
+  const createNewThread = async (userId, db, setThreadId, setMessages) => {
+    const newThreadRef = await addDoc(collection(db, 'users', userId, 'threads'), {
+      createdAt: new Date()
+    })
+    setThreadId(newThreadRef.id)
+    localStorage.setItem('currentThreadId', newThreadRef.id)
+    const initialMessage = {
+      role: 'assistant',
+      content: "Hi! I'm the Headstarter support assistant. How can I help you today?",
+      timestamp: new Date()
+    }
+    setMessages([initialMessage])
+    await addDoc(collection(db, 'users', userId, 'threads', newThreadRef.id, 'messages'), initialMessage)
+  }
+ 
   //File Uploading
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -177,35 +209,36 @@ export default function Home() {
 
   // Function to upload a file
   const uploadFile = async () => {
-    if (!file) return;
+    if (!file || !user) return;
 
     setUploading(true);
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('userId', user.uid);
 
     try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+        });
 
-      if (response.ok) {
-        console.log('File uploaded successfully');
-        setFile(null);
-        setFileName(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+        if (response.ok) {
+            console.log('File uploaded successfully');
+            setFile(null);
+            setFileName(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+            alert('File uploaded successfully');
+        } else {
+            console.error('File upload failed');
         }
-        alert('File uploaded successfully');
-      } else {
-        console.error('File upload failed');
-      }
     } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('Error uploading file');
+        console.error('Error uploading file:', error);
+        alert('Error uploading file');
     } finally {
-      setUploading(false);
+        setUploading(false);
     }
   };
 
@@ -222,19 +255,24 @@ export default function Home() {
     if (!message.trim() || isLoading) return;
     setIsLoading(true)
     setMessage('')
+    
+    const newUserMessage = { role: 'user', content: message, timestamp: new Date() }
+    const newAssistantMessage = { role: 'assistant', content: '', model: currentModel, timestamp: new Date() }
+
     setMessages((prevMessages) => [
       ...prevMessages,
-      { role: 'user', content: message },
-      { role: 'assistant', content: '', model: currentModel },
+      newUserMessage,
+      newAssistantMessage
     ])
   
     try {
+      await addDoc(collection(db, 'users', user.uid, 'threads', threadId, 'messages'), newUserMessage)
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify([...messages, { role: 'user', content: message }]),
+        body: JSON.stringify([...messages, newUserMessage]),
       })
       if (!response.ok) {
         throw new Error('Network response was not ok')
@@ -275,6 +313,12 @@ export default function Home() {
         })
         setCurrentModel(newModel)
       }
+
+      await addDoc(collection(db, 'users', user.uid, 'threads', threadId, 'messages'), {
+        ...newAssistantMessage,
+        content: accumulatedContent,
+      });
+
     } catch (error) {
       console.error('Error:', error)
       setMessages((prevMessages) => [
@@ -285,6 +329,14 @@ export default function Home() {
       setIsLoading(false)
     }
   }
+
+  const startNewThread = useCallback(() => {
+    if (user) {
+      setMessages([]) // Clear existing messages
+      createNewThread(user.uid, db, setThreadId, setMessages)
+    }
+  }, [user, db, setThreadId, setMessages])
+
   // Function to handle the enter key press
   const handleKeyPress = (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -301,7 +353,6 @@ export default function Home() {
   };
 
   const handleLogout = () => {
-    const auth = getAuth();
     signOut(auth).then(() => {
       router.push('/authentication/login');
     }).catch((error) => {
@@ -472,6 +523,14 @@ export default function Home() {
                 disabled = {uploading}
                 >
                 {uploading ? <CircularProgress size={24} /> : 'Upload'}
+              </Button>
+              {/* New Thread button */}
+              <Button
+                variant="contained"
+                onClick={startNewThread}
+                sx={{ height: '50px' }}
+              >
+                New Thread
               </Button>
             </Stack>
           </Stack>

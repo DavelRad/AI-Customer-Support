@@ -5,6 +5,9 @@ import dotenv from 'dotenv';
 import path from "path";
 import { Pinecone } from '@pinecone-database/pinecone';
 import { HfInference } from "@huggingface/inference";
+import { getFirestore, collection, addDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../../utils/firebase-config'; // Adjust this import based on your Firebase config file location
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const pinecone = new Pinecone({
@@ -34,53 +37,83 @@ async function getEmbedding(text) {
   }
 }
 
-async function storeAndIndexFile(buffer, filename) {
-    try {
-      // Store the file
-      const filePath = path.join(process.cwd(), "docs/" + filename);
-      await fs.writeFile(filePath, buffer);
-  
-      // Read the file contents
-      const data = await fs.readFile(filePath, 'utf-8');
-      const chunks = data.split('\n\n');
-  
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        let embedding = await getEmbedding(chunk);
-        embedding = padTo1024Dimensions(embedding);
-  
-        await index.upsert([{
-          id: `${filename}-chunk-${i}`,
-          values: embedding,
-          metadata: { text: chunk }
-        }]);
-  
-        console.log(`Uploaded chunk ${i + 1} of ${chunks.length} for file ${filename}`);
-      }
-  
-      return NextResponse.json({ Message: "Success", status: 201 });
-    } catch (error) {
-      console.error('Error in storeAndIndexFile:', error);
-      return NextResponse.json({ Message: "Failed", status: 500 });
+const MAX_METADATA_LENGTH = 500; // Adjust this value as needed
+
+async function storeAndIndexFile(buffer, filename, userId) {
+  try {
+    // Upload file to Firebase Storage
+    const storageRef = ref(storage, `users/${userId}/${filename}`);
+    await uploadBytes(storageRef, buffer);
+    const downloadURL = await getDownloadURL(storageRef);
+
+    // Read the file contents
+    const data = buffer.toString('utf-8');
+    const chunks = data.split('\n\n');
+
+    // Store file information in Firestore
+    const fileRef = await addDoc(collection(db, 'users', userId, 'files'), {
+      filename: filename,
+      uploadDate: new Date(),
+      downloadURL: downloadURL,
+      chunks: []
+    });
+
+    for (let i = 0;i < chunks.length; i++) {
+      const chunk = chunks[i];
+      let embedding = await getEmbedding(chunk);
+      embedding = padTo1024Dimensions(embedding);
+
+      const chunkId = `${filename}-chunk-${i}`;
+      await index.upsert([{
+        id: chunkId,
+        values: embedding,
+        metadata: { 
+          text: chunk.substring(0, MAX_METADATA_LENGTH), // Truncate the text
+          userId: userId, 
+          fileId: fileRef.id,
+          fullTextId: chunkId // Add this to reference the full text if needed
+        }
+      }]);
+
+      // Store full text in Firestore if needed
+      await addDoc(collection(db, 'users', userId, 'chunks'), {
+        id: chunkId,
+        text: chunk,
+        fileId: fileRef.id
+      });
+
+      console.log(`Indexed chunk ${i + 1} of ${chunks.length} for file ${filename}`);
     }
+
+    return NextResponse.json({ Message: "Success", status: 201 });
+  } catch (error) {
+    console.error('Error in storeAndIndexFile:', error);
+    return NextResponse.json({ Message: "Failed", status: 500 });
   }
+}
   
-  export const POST = async (req, res) => {
-    const formData = await req.formData();
-  
-    const file = formData.get("file");
-    if (!file) {
+export const POST = async (req, res) => {
+  const formData = await req.formData();
+
+  const file = formData.get("file");
+  const userId = formData.get("userId"); // Make sure to send userId from the client
+
+  if (!file) {
       return NextResponse.json({ error: "No files received." }, { status: 400 });
-    }
-  
-    // Convert the file to a buffer
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const filename = file.name.replaceAll(" ", "_");
-    console.log(filename);
-  
-    // Store and index the file
-    return storeAndIndexFile(buffer, filename);
-  };
+  }
+
+  if (!userId) {
+      return NextResponse.json({ error: "User ID is required." }, { status: 400 });
+  }
+
+  // Convert the file to a buffer
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const filename = file.name.replaceAll(" ", "_");
+  console.log(filename);
+
+  // Store and index the file
+  return storeAndIndexFile(buffer, filename, userId);
+};
   
 
 // dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
