@@ -10,37 +10,46 @@ export default function Login() {
     const [password, setPassword] = useState("")
     const router = useRouter();
 
-    const login = (e) => {
+    const login = async (e) => {
         e.preventDefault()
-        signInWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                console.log("Login Successful", userCredential.user)
-                userCredential.user.getIdToken().then(token => {
-                    console.log("Token:", token)
-                    localStorage.setItem('token', token)
-                })
-                router.push('/')
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password)
+            console.log("Login Successful", userCredential.user)
+            
+            userCredential.user.getIdToken().then(token => {
+                console.log("Token:", token)
+                localStorage.setItem('token', token)
             })
-        .catch((error) => {
-            console.log("Login failed:", error)
-        })
+
+            localStorage.removeItem('currentThreadId');
+
+            setTimeout(() => {
+                router.push('/');
+            }, 1000);
+        } catch (error) {
+            console.log("Login failed:", error);
+        }
     }
 
-    const loginWithGmail = () => {
+    const loginWithGmail = async () => {
         const provider = new GoogleAuthProvider()
-        signInWithRedirect(auth, provider)
-            .then((result) => {
-                console.log("Gmail Login Successful", result.user)
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
 
-                result.user.getIdToken().then(token => {
-                    console.log("Token:", token)
-                    localStorage.setItem('token', token)
-                })
-                router.push('/')
-            })
-            .catch((error) => {
-                console.log("Gmail Login Error", error)
-            })
+            console.log("Gmail Login Successful", user);
+
+            user.getIdToken().then(token => {
+                console.log("Token:", token);
+                localStorage.setItem('token', token);
+            });
+
+            localStorage.removeItem('currentThreadId'); // Optional: Reset current thread for a new session
+
+            router.push('/');
+        } catch (error) {
+            console.log("Gmail Login failed:", error);
+        }
     }
 
     return (

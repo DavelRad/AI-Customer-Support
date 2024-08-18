@@ -134,7 +134,7 @@ export default function Home() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Hi! I'm the Headstarter support assistant. How can I help you today?",
+      content: "Hi! I'm your personal assistant. How can I help you today?",
     },
   ])
   const [message, setMessage] = useState('')
@@ -181,7 +181,7 @@ export default function Home() {
     localStorage.setItem('currentThreadId', newThreadRef.id)
     const initialMessage = {
       role: 'assistant',
-      content: "Hi! I'm the Headstarter support assistant. How can I help you today?",
+      content: "Hi! I'm your personal assistant. How can I help you today?",
       timestamp: new Date()
     }
     setMessages([initialMessage])
@@ -272,7 +272,10 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify([...messages, newUserMessage]),
+        body: JSON.stringify({
+          messages: [...messages, newUserMessage],
+          userId: user.uid,
+        }),
       })
       if (!response.ok) {
         throw new Error('Network response was not ok')

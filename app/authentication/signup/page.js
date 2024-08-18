@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
-import { auth } from '../../utils/firebase-config'
+import { auth, db } from '../../utils/firebase-config'
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { doc, setDoc } from 'firebase/firestore'
 import { useRouter } from 'next/navigation'
 
 export default function Signup() {
@@ -10,39 +11,61 @@ export default function Signup() {
     const [password, setPassword] = useState("")
     const router = useRouter();
 
-    const signup = (e) => {
-        e.preventDefault()
-        createUserWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                console.log("Signup Successful", userCredential.user)
-                
-                userCredential.user.getIdToken().then(token => {
-                    console.log("Token:", token)
-                    localStorage.setItem('token', token)
-                })
-                router.push('/') // Redirect to home page after signup
-            })
-            .catch((error) => {
-                console.log("Signup failed:", error)
-            })
-    }
+    const signup = async (e) => {
+        e.preventDefault();
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
 
-    const signupWithGmail = () => {
+            console.log("Signup Successful", user);
+
+            // Store email and UUID in Firestore
+            const userRef = doc(db, 'users', user.uid);
+            await setDoc(userRef, {
+                email: user.email,
+                uuid: user.uid
+            });
+
+            user.getIdToken().then(token => {
+                console.log("Token:", token);
+                localStorage.setItem('token', token);
+            });
+
+            localStorage.removeItem('currentThreadId');
+
+            setTimeout(() => {
+                router.push('/');
+            }, 1000);
+        } catch (error) {
+            console.log("Signup failed:", error);
+        }
+    };
+
+    const signupWithGmail = async () => {
         const provider = new GoogleAuthProvider();
-        signInWithPopup(auth, provider)
-            .then((result) => {
-                console.log("Gmail Signup Successful", result.user)
-                
-                result.user.getIdToken().then(token => {
-                    console.log("Token:", token)
-                    localStorage.setItem('token', token)
-                })
-                router.push('/') // Redirect to home page after signup
-            })
-            .catch((error) => {
-                console.log("Gmail Signup failed:", error)
-            })
-    }
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            console.log("Gmail Signup Successful", user);
+
+            // Store email and UUID in Firestore
+            const userRef = doc(db, 'users', user.uid);
+            await setDoc(userRef, {
+                email: user.email,
+                uuid: user.uid
+            });
+
+            user.getIdToken().then(token => {
+                console.log("Token:", token);
+                localStorage.setItem('token', token);
+            });
+
+            router.push('/');
+        } catch (error) {
+            console.log("Gmail Signup failed:", error);
+        }
+    };
 
     return (
         <div style={styles.container}>
