@@ -132,8 +132,12 @@ export default function Home() {
     formData.append('userId', user.uid);
 
     try {
+        const token = await user.getIdToken()
         const response = await fetch('/api/upload', {
             method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
             body: formData,
         });
 
@@ -181,10 +185,12 @@ export default function Home() {
   
     try {
       await addDoc(collection(db, 'users', user.uid, 'threads', threadId, 'messages'), newUserMessage)
+      const token = await user.getIdToken();
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           messages: [...messages, newUserMessage],

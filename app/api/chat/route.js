@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getRelevantContext } from '../../utils/retrieval'
 import { HfInference } from "@huggingface/inference";
+import admin from '../../utils/admin.js'
 
 const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
@@ -56,6 +57,27 @@ async function selectModel(query) {
 }
 
 export async function POST(req) {
+  // Validate the token
+  const token = req.headers.get('Authorization')?.split('Bearer ')[1];
+  
+  if (!token) {
+    return new NextResponse(JSON.stringify({ error: 'Unauthorized: No token provided' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    console.log('Token is valid:', decodedToken);
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    return new NextResponse(JSON.stringify({ error: 'Unauthorized: Invalid token' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     // Destructure the incoming data
     const { messages, userId } = await req.json();

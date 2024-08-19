@@ -8,6 +8,8 @@ import { HfInference } from "@huggingface/inference";
 import { getFirestore, collection, addDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../utils/firebase-config'; // Adjust this import based on your Firebase config file location
+import admin from '../../utils/admin.js';
+
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const pinecone = new Pinecone({
@@ -43,7 +45,9 @@ async function storeAndIndexFile(buffer, filename, userId) {
   try {
     // Upload file to Firebase Storage
     const storageRef = ref(storage, `users/${userId}/${filename}`);
+    console.log(`Attempting to upload to path: users/${userId}/${filename}`);
     await uploadBytes(storageRef, buffer);
+    console.log('File uploaded');
     const downloadURL = await getDownloadURL(storageRef);
 
     // Read the file contents
@@ -88,11 +92,32 @@ async function storeAndIndexFile(buffer, filename, userId) {
     return NextResponse.json({ Message: "Success", status: 201 });
   } catch (error) {
     console.error('Error in storeAndIndexFile:', error);
-    return NextResponse.json({ Message: "Failed", status: 500 });
+    return NextResponse.json({ error: "Failed to upload file", details: error.message }, { status: 500 });
   }
 }
   
 export const POST = async (req, res) => {
+  // Validate the token
+  const token = req.headers.get('Authorization')?.split('Bearer ')[1];
+  
+  if (!token) {
+    return new NextResponse(JSON.stringify({ error: 'Unauthorized: No token provided' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    console.log('Token is valid:', decodedToken);
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    return new NextResponse(JSON.stringify({ error: 'Unauthorized: Invalid token' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const formData = await req.formData();
 
   const file = formData.get("file");
