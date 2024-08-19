@@ -10,6 +10,8 @@ import { collection, addDoc, query, where, orderBy, getDocs } from 'firebase/fir
 import { auth, db } from './utils/firebase-config'
 import { useRouter } from 'next/navigation';
 import { create } from '@mui/material/styles/createTransitions';
+import UserProfile from './components/UserProfile';
+import LLMInfo from './components/LLMInfo';
 
 const darkTheme = createTheme({
   palette: {
@@ -40,94 +42,6 @@ const VisuallyHiddenInput = styled('input')({
   width: 1,
 });
 
-
-// LLM info component (tab on top of the chatbots messages)
-// Updated LLM info component with rounded logo
-const LLMInfo = ({ model }) => {
-  const modelInfo = {
-    'meta-llama/llama-3.1-8b-instruct:free': {
-      name: 'LLama-3.1-8b-instruct',
-      logo: '/images/llama-logo.png'
-    },
-    'openchat/openchat-7b:free': {
-      name: 'OpenChat 3.5',
-      logo: '/images/openchat-logo.png'
-    },
-    'gryphe/mythomist-7b:free': {
-      name: 'MythoMist-7b',
-      logo: '/images/mythomist-logo.png'
-    }
-  };
-
-  const { name, logo } = modelInfo[model] || modelInfo['meta-llama/llama-3.1-8b-instruct:free'];
-
-  return (
-    <Box
-      sx={{
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        padding: '3px 8px',
-        borderRadius: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        marginBottom: '4px',
-        width: 'fit-content',
-      }}
-    >
-      <Box
-        component="img"
-        src={logo}
-        alt={`${name} Logo`}
-        sx={{
-          width: 16,
-          height: 16,
-          marginRight: 1,
-          borderRadius: '50%',
-          objectFit: 'cover',
-        }}
-      />
-      <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
-        {name}
-      </Typography>
-    </Box>
-  );
-};
-
-const UserProfile = ({ user, onLogout }) => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLogout = () => {
-    handleClose();
-    onLogout();
-  };
-
-  return (
-    <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', alignItems: 'center' }}>
-      <Typography variant="body2" sx={{ mr: 2, color: 'white' }}>{user.email}</Typography>
-      <Avatar
-        onClick={handleClick}
-        sx={{ cursor: 'pointer', bgcolor: 'primary.main' }}
-      >
-        {user.email[0].toUpperCase()}
-      </Avatar>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-      >
-        <MenuItem onClick={handleLogout}>Logout</MenuItem>
-      </Menu>
-    </Box>
-  );
-};
 
 export default function Home() {
   // State for the messages in the chat
