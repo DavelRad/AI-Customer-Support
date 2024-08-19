@@ -4,15 +4,15 @@ import { Box, Button, Stack, TextField, Typography, CircularProgress, Avatar, Me
 const LLMInfo = ({ model }) => {
     const modelInfo = {
       'meta-llama/llama-3.1-8b-instruct:free': {
-        name: 'LLama-3.1-8b-instruct',
+        name: 'Lani the Llama',
         logo: '/images/llama-logo.png'
       },
       'openchat/openchat-7b:free': {
-        name: 'OpenChat 3.5',
+        name: 'Byte the Tech Owl',
         logo: '/images/openchat-logo.png'
       },
       'gryphe/mythomist-7b:free': {
-        name: 'MythoMist-7b',
+        name: 'Myra the Myth Weaver',
         logo: '/images/mythomist-logo.png'
       }
     };

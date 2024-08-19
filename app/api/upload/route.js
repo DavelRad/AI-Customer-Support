@@ -45,9 +45,7 @@ async function storeAndIndexFile(buffer, filename, userId) {
   try {
     // Upload file to Firebase Storage
     const storageRef = ref(storage, `users/${userId}/${filename}`);
-    console.log(`Attempting to upload to path: users/${userId}/${filename}`);
     await uploadBytes(storageRef, buffer);
-    console.log('File uploaded');
     const downloadURL = await getDownloadURL(storageRef);
 
     // Read the file contents
