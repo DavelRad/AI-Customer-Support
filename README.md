@@ -2,6 +2,12 @@
 
 This project is an AI-driven support chatbot designed to enhance user experience on platforms like Headstarter, a platform facilitating AI-powered interviews for software engineering candidates. The chatbot dynamically selects the best AI model based on user queries, ensuring that responses are contextually relevant, accurate, and engaging.
 
+![Chatbot Interface](./Screenshot%202024-08-20%20at%201.13.02%20AM.png)
+
+[Watch the demo on YouTube](https://youtu.be/t6njzBo5tko)
+
+[Visit the project here](www.samplelink.com)
+
 ## **Distinct Personalities and AI Model Selection**
 The chatbot is equipped with multiple AI personalities, each representing a different model, making it a versatile assistant capable of handling a wide range of tasks:
 * **Lani the Llama (LLama-3.1-8b-Instruct)**: This personality is friendly and informative, specializing in general support and platform-related inquiries. Lani is the go-to personality for providing clear and concise information about Headstarter and other general topics.
