@@ -2,12 +2,17 @@
 
 This project is an AI-driven support chatbot designed to enhance user experience on platforms like Headstarter, a platform facilitating AI-powered interviews for software engineering candidates. The chatbot dynamically selects the best AI model based on user queries, ensuring that responses are contextually relevant, accurate, and engaging.
 
+## **Distinct Personalities and AI Model Selection**
+The chatbot is equipped with multiple AI personalities, each representing a different model, making it a versatile assistant capable of handling a wide range of tasks:
+* **Lani the Llama (LLama-3.1-8b-Instruct)**: This personality is friendly and informative, specializing in general support and platform-related inquiries. Lani is the go-to personality for providing clear and concise information about Headstarter and other general topics.
+
+* **Byte the Tech Owl (RWKV)**: A technical expert, Byte the Tech Owl excels at handling complex coding questions, debugging, and multilingual support. When the conversation requires deep technical knowledge or code-related assistance, Byte is ready to step in.
+
+* **Myra the Myth Weaver (MythoMist)**: The creative spirit of the team, Myra is perfect for storytelling, role-playing scenarios, and any queries that demand a touch of creativity or imagination. Myra makes interactions more engaging and is ideal for users looking to explore creative solutions.
+
+* **Dynamic AI Model Selection**: The chatbot intelligently chooses the most appropriate AI model based on the content of the user's query, optimizing response accuracy and relevance. This dynamic selection ensures that the right personality handles the right task, providing a tailored and seamless user experience.
 
 ## **Features**
-
-
-
-* **Dynamic AI Model Selection**: The chatbot intelligently chooses the most appropriate AI model (e.g., `meta-llama/llama-3.1-8b-instruct`, `RWKV`, `MythoMist`) based on the content of the user's query, optimizing response accuracy and relevance.
 * **Multi-Model Support**:
     * **LLama-3.1-8b-Instruct**: Handles general support and platform information.
     * **RWKV**: Ideal for technical questions, coding, and multi-lingual tasks.
@@ -58,7 +63,6 @@ This project is an AI-driven support chatbot designed to enhance user experience
         OPENROUTER_API_KEY=your_openrouter_api_key
         ```
 5. **Run the application**:
-`node script.mjs`
 `npm run dev`
 7. **Access the application**:
     * Open your browser and navigate to `http://localhost:3000`.
