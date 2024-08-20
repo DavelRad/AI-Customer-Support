@@ -3,7 +3,7 @@
 import { Box, Button, Stack, TextField, Typography, CircularProgress, Avatar, Menu, MenuItem } from '@mui/material'
 import { styled } from '@mui/material/styles';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, addDoc, query, where, orderBy, getDocs } from 'firebase/firestore';
@@ -12,22 +12,13 @@ import { useRouter } from 'next/navigation';
 import { create } from '@mui/material/styles/createTransitions';
 import UserProfile from './components/UserProfile';
 import LLMInfo from './components/LLMInfo';
+import ChatbotCharacter from './components/ChatbotCharacter';
 
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#1e1e1e',
-      paper: '#2d2d2d',
-    },
-    primary: {
-      main: '#2EBAFF',
-    },
-    secondary: {
-      main: '#950606',
-    },
-  },
-});
+const backgroundColors = {
+  'meta-llama/llama-3.1-8b-instruct:free': '#3A3A3A', // A neutral tone with a hint of Lani's color
+  'openchat/openchat-7b:free': '#1F2B3C', // A dark, techy blue for Byte
+  'gryphe/mythomist-7b:free': '#2C1E2D'  // A mystical dark hue for Myra
+};
 
 //From MUI documentation
 const VisuallyHiddenInput = styled('input')({
@@ -58,6 +49,22 @@ export default function Home() {
   const [user, setUser] = useState(null)
   const [threadId, setThreadId] = useState(null)
   const router = useRouter()
+
+  const darkTheme = useMemo(() => createTheme({
+    palette: {
+      mode: 'dark',
+      background: {
+        default: backgroundColors[currentModel],
+        paper: '#2d2d2d',
+      },
+      primary: {
+        main: '#2EBAFF',
+      },
+      secondary: {
+        main: '#950606',
+      },
+    },
+  }), [currentModel]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -283,7 +290,7 @@ export default function Home() {
     });
   };
 
-
+  console.log('Rendering Home Component');
   return (
     <ThemeProvider theme={darkTheme}>
       {/* main page */}
@@ -297,6 +304,8 @@ export default function Home() {
         position="relative"
       >
         {user && <UserProfile user={user} onLogout={handleLogout} />}
+        {console.log('Rendering ChatbotCharacter')}
+        <ChatbotCharacter model={currentModel} />
         
         {/* chat box */}
         <Box
@@ -308,6 +317,7 @@ export default function Home() {
           bgcolor="background.paper"
           sx={{
             boxShadow: '0 0 20px rgba(255,255,255,0.3)',
+            zIndex: 2,
           }}
         >
           {/* stack for the chat messages and input */}
