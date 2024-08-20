@@ -23,7 +23,7 @@ The chatbot is equipped with multiple AI personalities, each representing a diff
     * **LLama-3.1-8b-Instruct**: Handles general support and platform information.
     * **RWKV**: Ideal for technical questions, coding, and multi-lingual tasks.
     * **MythoMist**: Best for creative and storytelling tasks, role-playing scenarios.
-* **File Upload Capability**: Users can upload documents (up to 40KB) that the chatbot can use to provide more informed responses.
+* **File Upload Capability**: Users can upload documents (up to 40KB) that the chatbot can use to provide more informed responses. Note that it only currently accept .txt files. 
 * **Real-Time Streaming Responses**: The chatbot streams its responses to provide near-instant feedback, improving user experience.
 * **Customizable UI**: The front-end is built with React.js and Material UI, providing a sleek, modern interface with a dark theme for comfortable usage.
 
