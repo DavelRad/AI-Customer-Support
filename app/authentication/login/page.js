@@ -4,6 +4,7 @@ import React, {useState} from 'react'
 import { auth } from '../../utils/firebase-config'
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect } from 'firebase/auth'
 import { useRouter } from 'next/navigation'
+import { Container, TextField, Button, Typography, Box, Link } from '@mui/material'
 
 export default function Login() {
     const [email, setEmail] = useState("")
@@ -53,86 +54,57 @@ export default function Login() {
     }
 
     return (
-        <div style={styles.container}>
-            <h1>Login</h1>
-            <form onSubmit={login} style={styles.form}>
-                <input
+        <Container maxWidth="sm" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', bgcolor: '#1e1e1e', borderRadius: 2, boxShadow: 3, p: 3 }}>
+            <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <img src="/images/byteTheTechOwl_inPixio.png" alt="Byte the Tech Owl" style={{ width: '100px', height: 'auto' }} />
+            </Box>
+
+            <Typography variant="h4" component="h1" sx={{ color: '#ffffff', mb: 3 }}>
+                Login
+            </Typography>
+
+            <Box component="form" onSubmit={login} sx={{ width: '100%', maxWidth: '350px', display: 'flex', flexDirection: 'column', bgcolor: '#2b2b2b', p: 3, borderRadius: 2 }}>
+                <TextField
                     type="email"
+                    label="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email"
-                    style={styles.input}
+                    variant="outlined"
+                    fullWidth
+                    margin="normal"
+                    InputLabelProps={{
+                        style: { color: '#ccc' },
+                    }}
+                    InputProps={{
+                        style: { color: '#fff' },
+                    }}
                 />
-                <input
+                <TextField
                     type="password"
+                    label="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    style={styles.input}
+                    variant="outlined"
+                    fullWidth
+                    margin="normal"
+                    InputLabelProps={{
+                        style: { color: '#ccc' },
+                    }}
+                    InputProps={{
+                        style: { color: '#fff' },
+                    }}
                 />
-                <button type="submit" style={styles.button}>
+                <Button type="submit" variant="contained" sx={{ mt: 2, bgcolor: '#0070f3', '&:hover': { bgcolor: '#005bb5' } }}>
                     Login
-                </button>
-            </form>
-            <button onClick={loginWithGmail} style={styles.gmailButton}>
-                Login with Gmail
-            </button>
-            <p>
+                </Button>
+            </Box>
+
+            <Typography variant="body2" sx={{ mt: 2, color: '#ffffff' }}>
                 Don't have an account?{' '}
-                <span style={styles.link} onClick={() => router.push('/authentication/signup')}>
+                <Link onClick={() => router.push('/authentication/signup')} sx={{ color: '#0070f3', cursor: 'pointer' }}>
                     Sign up here
-                </span>
-            </p>
-        </div>
+                </Link>
+            </Typography>
+        </Container>
     )
 }
-
-const styles = {
-    container: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        backgroundColor: '#f5f5f5',
-        padding: '20px',
-    },
-    form: {
-        display: 'flex',
-        flexDirection: 'column',
-        width: '300px',
-    },
-    input: {
-        marginBottom: '10px',
-        padding: '10px',
-        fontSize: '16px',
-        borderRadius: '4px',
-        border: '1px solid #ccc',
-    },
-    button: {
-        padding: '10px',
-        fontSize: '16px',
-        borderRadius: '4px',
-        border: 'none',
-        backgroundColor: '#0070f3',
-        color: '#fff',
-        cursor: 'pointer',
-        marginBottom: '10px',
-    },
-    gmailButton: {
-        padding: '10px',
-        fontSize: '16px',
-        borderRadius: '4px',
-        border: 'none',
-        backgroundColor: '#db4437',
-        color: '#fff',
-        cursor: 'pointer',
-        width: '300px',
-        marginBottom: '10px',
-    },
-    link: {
-        color: '#0070f3',
-        cursor: 'pointer',
-        textDecoration: 'underline',
-    },
-};
