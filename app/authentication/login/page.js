@@ -101,7 +101,7 @@ export default function Login() {
             </Box>
 
             <Typography variant="body2" sx={{ mt: 2, color: '#ffffff' }}>
-                Don't have an account?{' '}
+                Don&apos;t have an account?&nbsp;
                 <Link onClick={() => router.push('/authentication/signup')} sx={{ color: '#0070f3', cursor: 'pointer' }}>
                     Sign up here
                 </Link>
