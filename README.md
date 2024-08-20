@@ -6,7 +6,7 @@ This project is an AI-driven support chatbot designed to enhance user experience
 
 [Watch the demo on YouTube](https://youtu.be/t6njzBo5tko)
 
-[Visit the project here](www.samplelink.com)
+[Visit the project here](https://holo-chat.vercel.app/)
 
 ## **Distinct Personalities and AI Model Selection**
 The chatbot is equipped with multiple AI personalities, each representing a different model, making it a versatile assistant capable of handling a wide range of tasks:
