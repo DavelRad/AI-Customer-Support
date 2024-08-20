@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Button, Stack, TextField, Typography, CircularProgress, Avatar, Menu, MenuItem } from '@mui/material'
+import Image from 'next/image'
 
 const characterImages = {
     'meta-llama/llama-3.1-8b-instruct:free': '/images/laniTheLlama_inPixio.png',
@@ -19,7 +20,13 @@ const ChatbotCharacter = ({ model }) => {
                 zIndex: 1,  // Ensure the character is above the chatbox and other content
             }}
         >
-            <img src={characterImages[model]} alt="Character Mascot" style={{ width: '100px', height: 'auto' }} />
+            <Image 
+                src={characterImages[model]} 
+                alt="Character Mascot" 
+                width={100} 
+                height={100} 
+                priority={true} // This ensures the image is loaded as soon as possible
+            />
         </Box>
     );
 };

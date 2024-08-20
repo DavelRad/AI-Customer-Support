@@ -6,6 +6,7 @@ import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } f
 import { doc, setDoc } from 'firebase/firestore'
 import { useRouter } from 'next/navigation'
 import { Container, TextField, Button, Typography, Box, Link } from '@mui/material'
+import Image from 'next/image'
 
 export default function Signup() {
     const [email, setEmail] = useState("")
@@ -71,7 +72,7 @@ export default function Signup() {
     return (
         <Container maxWidth="sm" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', bgcolor: '#1e1e1e', borderRadius: 2, boxShadow: 3, p: 3 }}>
             <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <img src="/images/myraTheMythWeaver_inPixio.png" alt="Lani the Llama" style={{ width: '100px', height: 'auto' }} />
+                <Image src="/images/myraTheMythWeaver_inPixio.png" alt="Myra the Myth Weaver" width={100} height={100} />
             </Box>
 
             <Typography variant="h4" component="h1" sx={{ color: '#ffffff', mb: 3 }}>

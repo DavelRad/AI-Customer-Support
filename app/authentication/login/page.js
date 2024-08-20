@@ -5,6 +5,7 @@ import { auth } from '../../utils/firebase-config'
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect } from 'firebase/auth'
 import { useRouter } from 'next/navigation'
 import { Container, TextField, Button, Typography, Box, Link } from '@mui/material'
+import Image from "next/image"
 
 export default function Login() {
     const [email, setEmail] = useState("")
@@ -56,7 +57,7 @@ export default function Login() {
     return (
         <Container maxWidth="sm" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', bgcolor: '#1e1e1e', borderRadius: 2, boxShadow: 3, p: 3 }}>
             <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <img src="/images/byteTheTechOwl_inPixio.png" alt="Byte the Tech Owl" style={{ width: '100px', height: 'auto' }} />
+                <Image src="/images/byteTheTechOwl_inPixio.png" alt="Byte the Tech Owl" width={100} height={100} />
             </Box>
 
             <Typography variant="h4" component="h1" sx={{ color: '#ffffff', mb: 3 }}>
