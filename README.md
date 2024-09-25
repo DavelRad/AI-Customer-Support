@@ -1,6 +1,6 @@
 # **AI-Powered Support Chatbot**
 
-This project is an AI-driven support chatbot designed to enhance user experience on platforms like Headstarter, a platform facilitating AI-powered interviews for software engineering candidates. The chatbot dynamically selects the best AI model based on user queries, ensuring that responses are contextually relevant, accurate, and engaging.
+This AI-driven support chatbot designed to enhance user experience with its ability to dynamically selects the best AI model based on user queries, ensuring that responses are contextually relevant, accurate, and engaging.
 
 ![Chatbot Interface](./public/images/AI-Support-Screenshot.png)
 
